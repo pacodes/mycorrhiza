@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -23,76 +22,41 @@ func RevInMap(m map[string]string) string {
 func HandlerGetBinary(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno, w)
+	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
 	if !ok {
 		return
 	}
-	fileContents, err := ioutil.ReadFile(rev.BinaryPath)
-	if err != nil {
-		log.Println("Failed to load binary data of", rev.FullName, rev.Id)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", rev.MimeType)
-	w.WriteHeader(http.StatusOK)
-	w.Write(fileContents)
-	log.Println("Showing image of", rev.FullName, rev.Id)
+	rev.ActionGetBinary(w)
 }
 
 func HandlerRaw(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno, w)
+	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
 	if !ok {
 		return
 	}
-	fileContents, err := ioutil.ReadFile(rev.TextPath)
-	if err != nil {
-		log.Println("Failed to load text data of", rev.FullName, rev.Id)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write(fileContents)
-	log.Println("Serving text data of", rev.FullName, rev.Id)
+	rev.ActionRaw(w)
 }
 
 func HandlerZen(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno, w)
+	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
 	if !ok {
 		return
 	}
-	html, err := rev.Render(hyphae)
-	if err != nil {
-		log.Println("Failed to render", rev.FullName)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, html)
+	rev.ActionZen(w, hyphae)
 }
 
 func HandlerView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno, w)
+	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
 	if !ok {
 		return
 	}
-	html, err := rev.Render(hyphae)
-	if err != nil {
-		log.Println("Failed to render", rev.FullName)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, HyphaPage(hyphae, rev, html))
-	log.Println("Rendering", rev.FullName)
+	rev.ActionView(w, hyphae, HyphaPage)
 }
 
 func HandlerHistory(w http.ResponseWriter, r *http.Request) {
@@ -126,10 +90,10 @@ func HandlerUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 var rootWikiDir string
-var hyphae map[string]*Hypha
+var hyphae map[string]Hypha
 
-func hyphaeAsMap(hyphae []*Hypha) map[string]*Hypha {
-	mh := make(map[string]*Hypha)
+func hyphaeAsMap(hyphae []*Hypha) map[string]Hypha {
+	mh := make(map[string]Hypha)
 	for _, h := range hyphae {
 		mh[h.Name] = h
 	}
