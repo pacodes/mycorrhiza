@@ -1,9 +1,14 @@
 package main
 
 import (
-	"github.com/bouncepaw/mycorrhiza/fs"
 	"net/http"
 )
+
+type HyphaStorage interface {
+	ByName(string) (Hypha, error)
+	ByNameRevision(string, string) (Revision, error)
+	Init(string)
+}
 
 type Hypha interface {
 	AddChild(string)
@@ -16,17 +21,8 @@ type Hypha interface {
 type Revision interface {
 	ActionGetBinary(http.ResponseWriter)
 	ActionRaw(http.ResponseWriter)
-	ActionZen(http.ResponseWriter, map[string]Hypha)
-	ActionView(http.ResponseWriter, map[string]Hypha, func(map[string]Hypha, Revision, string) string)
-	AsHtml(map[string]Hypha) (string, error)
+	ActionZen(http.ResponseWriter, HyphaStorage)
+	ActionView(http.ResponseWriter, HyphaStorage, func(map[string]Hypha, Revision, string) string)
+	AsHtml(HyphaStorage) (string, error)
 	Name() string
-}
-
-func GetRevision(hyphae map[string]Hypha, hyphaName string, revId string) (Revision, bool) {
-	for revName, rev := range hyphae[hyphaName].Revisions {
-		if revId == revName {
-			return *rev, true
-		}
-	}
-	return fs.Revision{}, false
 }

@@ -1,25 +1,24 @@
 package fs
 
 import (
-	"encoding/json"
 	"io/ioutil"
-	"log"
-	"os"
 	"path/filepath"
 	"regexp"
 )
 
 const (
+	HyphaPattern    = `[^\s\d:/?&\\][^:?&\\]*`
 	hyphaPattern    = `[^\s\d:/?&\\][^:?&\\]*`
 	revisionPattern = `[\d]+`
 	revTxtPattern   = revisionPattern + `\.txt`
 	revBinPattern   = revisionPattern + `\.bin`
 	metaJsonPattern = `meta\.json`
+	RevQuery        = `{rev:` + revisionPattern + `}`
+	HyphaUrl        = `/` + hyphaPattern
 )
 
 var (
-	leadingInt  = regexp.MustCompile(`^[-+]?\d+`)
-	rootWikiDir = os.Args[1]
+	leadingInt = regexp.MustCompile(`^[-+]?\d+`)
 )
 
 func matchNameToEverything(name string) (hyphaM bool, revTxtM bool, revBinM bool, metaJsonM bool) {
@@ -82,68 +81,4 @@ func scanHyphaDir(fullPath string) (valid bool, revs map[string]map[string]strin
 	valid = hyphaDirRevsValidate(revs)
 
 	return // implicit return values
-}
-
-// Hypha name is rootWikiDir/{here}
-func hyphaName(fullPath string) string {
-	return fullPath[len(rootWikiDir)+1:]
-}
-
-func FindHyphae(fullPath string) (hyphae map[string]Hypha) {
-	valid, revs, possibleSubhyphae, metaJsonPath, err := scanHyphaDir(fullPath)
-	if err != nil {
-		return hyphae
-	}
-
-	// First, let's process subhyphae
-	for _, possibleSubhypha := range possibleSubhyphae {
-		for k, v := range FindHyphae(possibleSubhypha) {
-			hyphae[k] = v
-		}
-	}
-
-	// This folder is not a hypha itself, nothing to do here
-	if !valid {
-		return hyphae
-	}
-
-	// Template hypha struct. Other fields are default json values.
-	h := Hypha{
-		FullName:   hyphaName(fullPath),
-		Path:       fullPath,
-		parentName: filepath.Dir(hyphaName(fullPath)),
-		// Children names are unknown now
-	}
-
-	metaJsonContents, err := ioutil.ReadFile(metaJsonPath)
-	if err != nil {
-		log.Printf("Error when reading `%s`; skipping", metaJsonPath)
-		return hyphae
-	}
-	err = json.Unmarshal(metaJsonContents, &h)
-	if err != nil {
-		log.Printf("Error when unmarshaling `%s`; skipping", metaJsonPath)
-		return hyphae
-	}
-
-	// Fill in every revision paths
-	for id, paths := range revs {
-		if r, ok := h.Revisions[id]; ok {
-			for fType, fPath := range paths {
-				switch fType {
-				case "bin":
-					r.BinaryPath = fPath
-				case "txt":
-					r.TextPath = fPath
-				}
-			}
-		} else {
-			log.Printf("Error when reading hyphae from disk: hypha `%s`'s meta.json provided no information about revision `%s`, but files %s are provided; skipping\n", h.FullName, id, paths)
-		}
-	}
-
-	// Now the hypha should be ok, gotta send structs
-	hyphae[h.FullName] = h
-	return hyphae
-
 }

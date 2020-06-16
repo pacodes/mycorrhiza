@@ -32,7 +32,7 @@ func (r *Revision) urlOfBinary() string {
 }
 
 // TODO: use templates https://github.com/bouncepaw/mycorrhiza/issues/2
-func (r *Revision) AsHtml(hyphae map[string]Hypha) (ret string, err error) {
+func (r *Revision) AsHtml(hs HyphaStorage) (ret string, err error) {
 	ret += `<article class="page">
 `
 	// TODO: support things other than images
@@ -88,8 +88,8 @@ func (r *Revision) ActionRaw(w http.ResponseWriter) {
 	log.Println("Serving text data of", r.FullName, r.Id)
 }
 
-func (r *Revision) ActionZen(w http.ResponseWriter, hyphae map[string]Hypha) {
-	html, err := r.AsHtml(hyphae)
+func (r *Revision) ActionZen(w http.ResponseWriter, hs HyphaStorage) {
+	html, err := r.AsHtml(hs)
 	if err != nil {
 		log.Println("Failed to render", r.FullName)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -100,8 +100,8 @@ func (r *Revision) ActionZen(w http.ResponseWriter, hyphae map[string]Hypha) {
 	fmt.Fprint(w, html)
 }
 
-func (r *Revision) ActionView(w http.ResponseWriter, hyphae map[string]Hypha, layoutFun func(map[string]Hypha, Revision, string) string) {
-	html, err := r.AsHtml(hyphae)
+func (r *Revision) ActionView(w http.ResponseWriter, hs HyphaStorage, layoutFun func(HyphaStorage, Revision, string) string) {
+	html, err := r.AsHtml(hs)
 	if err != nil {
 		log.Println("Failed to render", r.FullName)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -109,7 +109,7 @@ func (r *Revision) ActionView(w http.ResponseWriter, hyphae map[string]Hypha, la
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, layoutFun(hyphae, *r, html))
+	fmt.Fprint(w, layoutFun(hs, *r, html))
 	log.Println("Rendering", r.FullName)
 }
 func (r *Revision) Name() string {

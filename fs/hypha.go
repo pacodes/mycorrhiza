@@ -20,7 +20,7 @@ func (h *Hypha) AddChild(childName string) {
 }
 
 // Used with action=zen|view
-func (h *Hypha) AsHtml(hyphae map[string]Hypha, rev string) (string, error) {
+func (h *Hypha) AsHtml(hs HyphaStorage, rev string) (string, error) {
 	if "0" == rev {
 		rev = h.NewestRevision()
 	}
@@ -28,7 +28,7 @@ func (h *Hypha) AsHtml(hyphae map[string]Hypha, rev string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("Hypha %v has no such revision: %v", h.FullName, rev)
 	}
-	html, err := r.AsHtml(hyphae)
+	html, err := r.AsHtml(hs)
 	return html, err
 }
 

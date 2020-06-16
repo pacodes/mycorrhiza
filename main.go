@@ -22,8 +22,8 @@ func RevInMap(m map[string]string) string {
 func HandlerGetBinary(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
-	if !ok {
+	rev, err := hs.ByNameRevision(vars["hypha"], revno)
+	if err != nil {
 		return
 	}
 	rev.ActionGetBinary(w)
@@ -32,8 +32,8 @@ func HandlerGetBinary(w http.ResponseWriter, r *http.Request) {
 func HandlerRaw(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
-	if !ok {
+	rev, err := hs.ByNameRevision(vars["hypha"], revno)
+	if err != nil {
 		return
 	}
 	rev.ActionRaw(w)
@@ -42,21 +42,21 @@ func HandlerRaw(w http.ResponseWriter, r *http.Request) {
 func HandlerZen(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
-	if !ok {
+	rev, err := hs.ByNameRevision(vars["hypha"], revno)
+	if err != nil {
 		return
 	}
-	rev.ActionZen(w, hyphae)
+	rev.ActionZen(w, hs)
 }
 
 func HandlerView(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	revno := RevInMap(vars)
-	rev, ok := GetRevision(hyphae, vars["hypha"], revno)
-	if !ok {
+	rev, err := hs.ByNameRevision(vars["hypha"], revno)
+	if err != nil {
 		return
 	}
-	rev.ActionView(w, hyphae, HyphaPage)
+	rev.ActionView(w, hs, HyphaPage)
 }
 
 func HandlerHistory(w http.ResponseWriter, r *http.Request) {
@@ -89,22 +89,22 @@ func HandlerUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Println("Attempt to access an unimplemented thing")
 }
 
-var rootWikiDir string
-var hyphae map[string]Hypha
+var hs fs.HyphaStorage
+
+const (
+	revQuery = fs.RevQuery
+	hyphaUrl = fs.HyphaUrl
+)
 
 func main() {
 	if len(os.Args) == 1 {
 		panic("Expected a root wiki pages directory")
 	}
-	// Required so the rootWikiDir hereinbefore does not get redefined.
-	var err error
-	rootWikiDir, err = filepath.Abs(os.Args[1])
+	rootWikiDir, err := filepath.Abs(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
-
-	hyphae = fs.FindHyphae(rootWikiDir)
-	setRelations(hyphae)
+	hs.Init(rootWikiDir)
 
 	// Start server code
 	r := mux.NewRouter()
@@ -141,7 +141,7 @@ func main() {
 	r.Queries("action", "delete").Path(hyphaUrl).
 		HandlerFunc(HandlerDelete)
 
-	r.Queries("action", "rename", "to", hyphaPattern).Path(hyphaUrl).
+	r.Queries("action", "rename", "to", fs.HyphaPattern).Path(hyphaUrl).
 		HandlerFunc(HandlerRename)
 
 	r.Queries("action", "update").Path(hyphaUrl).
@@ -152,14 +152,7 @@ func main() {
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		for _, v := range hyphae {
-			log.Println("Rendering latest revision of hypha", v.Name)
-			html, err := v.Render(hyphae, 0)
-			if err != nil {
-				fmt.Fprintln(w, err)
-			}
-			fmt.Fprintln(w, html)
-		}
+		fmt.Fprintln(w, "Welcome to MycorrhizaWiki, feel free to do anything")
 	})
 
 	http.Handle("/", r)

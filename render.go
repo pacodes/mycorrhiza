@@ -24,7 +24,7 @@ func Layout(f map[string]string) string {
 	return fmt.Sprintf(template, f["title"], f["head"], f["header"], f["main"], f["sidebar"], FooterText, f["bodyBottom"])
 }
 
-func HyphaPage(hyphae map[string]Hypha, rev Revision, content string) string {
+func HyphaPage(hs HyphaStorage, rev Revision, content string) string {
 	template := `
 <div class="naviwrapper">
 	<form class="naviwrapper__buttons">
