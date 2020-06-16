@@ -37,7 +37,7 @@ func HyphaPage(hyphae map[string]Hypha, rev Revision, content string) string {
 </div>
 `
 	args := map[string]string{
-		"title":   fmt.Sprintf(TitleTemplate, rev.FullName),
+		"title":   fmt.Sprintf(TitleTemplate, rev.Name()),
 		"head":    DefaultStyles,
 		"header":  DefaultHeader,
 		"main":    fmt.Sprintf(template, content),

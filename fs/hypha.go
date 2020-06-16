@@ -6,7 +6,7 @@ import (
 )
 
 type Hypha struct {
-	Name          string
+	FullName      string
 	Path          string
 	ViewCount     int                  `json:"views"`
 	Deleted       bool                 `json:"deleted"`
@@ -26,10 +26,14 @@ func (h *Hypha) AsHtml(hyphae map[string]Hypha, rev string) (string, error) {
 	}
 	r, ok := h.Revisions[rev]
 	if !ok {
-		return "", fmt.Errorf("Hypha %v has no such revision: %v", h.Name, rev)
+		return "", fmt.Errorf("Hypha %v has no such revision: %v", h.FullName, rev)
 	}
 	html, err := r.AsHtml(hyphae)
 	return html, err
+}
+
+func (h *Hypha) Name() string {
+	return h.FullName
 }
 
 func (h *Hypha) NewestRevision() string {

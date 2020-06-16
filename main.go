@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/bouncepaw/mycorrhiza/fs"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	// "strconv"
 	"time"
 )
 
@@ -92,14 +92,6 @@ func HandlerUpdate(w http.ResponseWriter, r *http.Request) {
 var rootWikiDir string
 var hyphae map[string]Hypha
 
-func hyphaeAsMap(hyphae []*Hypha) map[string]Hypha {
-	mh := make(map[string]Hypha)
-	for _, h := range hyphae {
-		mh[h.Name] = h
-	}
-	return mh
-}
-
 func main() {
 	if len(os.Args) == 1 {
 		panic("Expected a root wiki pages directory")
@@ -111,7 +103,7 @@ func main() {
 		panic(err)
 	}
 
-	hyphae = hyphaeAsMap(recurFindHyphae(rootWikiDir))
+	hyphae = fs.FindHyphae(rootWikiDir)
 	setRelations(hyphae)
 
 	// Start server code
